@@ -116,13 +116,13 @@ struct csiphy_reg_parms_t {
 };
 
 /**
- * struct intf_params
+ * struct cam_csiphy_intf_params
  * @device_hdl: Device Handle
  * @session_hdl: Session Handle
  * @ops: KMD operations
  * @crm_cb: Callback API pointers
  */
-struct intf_params {
+struct cam_csiphy_intf_params {
 	int32_t device_hdl[CSIPHY_MAX_INSTANCES];
 	int32_t session_hdl[CSIPHY_MAX_INSTANCES];
 	int32_t link_hdl[CSIPHY_MAX_INSTANCES];
@@ -236,7 +236,7 @@ struct csiphy_device {
 	uint8_t num_irq_registers;
 	struct cam_subdev v4l2_dev_str;
 	struct cam_csiphy_param csiphy_info;
-	struct intf_params bridge_intf;
+	struct cam_csiphy_intf_params bridge_intf;
 	uint32_t clk_lane;
 	uint32_t acquire_count;
 	uint32_t start_dev_count;

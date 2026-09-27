@@ -58,14 +58,14 @@ enum cam_sensor_state_t {
 };
 
 /**
- * struct intf_params
+ * struct cam_sensor_intf_params
  * @device_hdl: Device Handle
  * @session_hdl: Session Handle
  * @link_hdl: Link Handle
  * @ops: KMD operations
  * @crm_cb: Callback API pointers
  */
-struct intf_params {
+struct cam_sensor_intf_params {
 	int32_t device_hdl;
 	int32_t session_hdl;
 	int32_t link_hdl;
@@ -113,7 +113,7 @@ struct cam_sensor_ctrl_t {
 	uint8_t sensor_probe_data_type;
 	struct i2c_data_settings i2c_data;
 	struct  cam_sensor_query_cap sensor_info;
-	struct intf_params bridge_intf;
+	struct cam_sensor_intf_params bridge_intf;
 	uint32_t streamon_count;
 	uint32_t streamoff_count;
 	int bob_reg_index;

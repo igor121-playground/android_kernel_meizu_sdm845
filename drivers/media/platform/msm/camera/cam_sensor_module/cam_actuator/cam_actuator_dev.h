@@ -77,13 +77,13 @@ struct cam_actuator_soc_private {
 };
 
 /**
- * struct intf_params
+ * struct cam_actuator_intf_params
  * @device_hdl: Device Handle
  * @session_hdl: Session Handle
  * @ops: KMD operations
  * @crm_cb: Callback API pointers
  */
-struct intf_params {
+struct cam_actuator_intf_params {
 	int32_t device_hdl;
 	int32_t session_hdl;
 	int32_t link_hdl;
@@ -124,7 +124,7 @@ struct cam_actuator_ctrl_t {
 	struct cam_subdev v4l2_dev_str;
 	struct i2c_data_settings i2c_data;
 	struct cam_actuator_query_cap act_info;
-	struct intf_params bridge_intf;
+	struct cam_actuator_intf_params bridge_intf;
 };
 
 #endif /* _CAM_ACTUATOR_DEV_H_ */
