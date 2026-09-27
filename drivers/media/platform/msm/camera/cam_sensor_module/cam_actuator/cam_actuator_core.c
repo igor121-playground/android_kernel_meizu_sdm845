@@ -162,8 +162,13 @@ static int32_t cam_actuator_i2c_modes_util(
 	uint32_t i, size;
 
 	if (i2c_list->op_code == CAM_SENSOR_I2C_WRITE_RANDOM) {
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 		rc = meizu_camera_io_dev_write(io_master_info,
 			&(i2c_list->i2c_settings));
+#else
+		rc = camera_io_dev_write(io_master_info,
+			&(i2c_list->i2c_settings));
+#endif
 		if (rc < 0) {
 			CAM_ERR(CAM_ACTUATOR,
 				"Failed to random write I2C settings: %d",
@@ -951,6 +956,7 @@ int32_t cam_actuator_flush_request(struct cam_req_mgr_flush_request *flush_req)
 	return rc;
 }
 
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 /*
  * Meizu AF helpers (M1882). Reconstructed from the stock kernel
  * (meizu_actuator_enable / meizu_get_af_pos / meizu_set_af_pos).
@@ -1025,6 +1031,26 @@ int32_t meizu_actuator_enable(struct cam_actuator_ctrl_t *a_ctrl, int enable)
 		return rc;
 	}
 
+	/*
+	 * Configure the actuator slave/CCI client as the stock
+	 * meizu_actuator_enable() does (verified against the stock DWARF):
+	 * I2C master  -> client->addr = 0xec;
+	 * CCI master  -> cci_client->cci_i2c_master = a_ctrl->cci_i2c_master,
+	 *                cci_client->i2c_freq_mode = 1,
+	 *                cci_client->sid = 0x76.
+	 */
+	if (a_ctrl->io_master_info.master_type == I2C_MASTER) {
+		if (a_ctrl->io_master_info.client)
+			a_ctrl->io_master_info.client->addr = 0xec;
+	} else if (a_ctrl->io_master_info.master_type == CCI_MASTER) {
+		if (a_ctrl->io_master_info.cci_client) {
+			a_ctrl->io_master_info.cci_client->cci_i2c_master =
+				a_ctrl->cci_i2c_master;
+			a_ctrl->io_master_info.cci_client->i2c_freq_mode = 1;
+			a_ctrl->io_master_info.cci_client->sid = 0x76;
+		}
+	}
+
 	rc = cam_actuator_power_up(a_ctrl);
 	if (rc < 0) {
 		CAM_ERR(CAM_ACTUATOR,
@@ -1053,3 +1079,4 @@ int32_t meizu_actuator_enable(struct cam_actuator_ctrl_t *a_ctrl, int enable)
 	usleep_range(10000, 11000);
 	return 0;
 }
+#endif

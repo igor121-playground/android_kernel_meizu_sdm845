@@ -120,6 +120,7 @@ int32_t camera_io_dev_write(struct camera_io_master *io_master_info,
 	}
 }
 
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 int32_t meizu_camera_io_dev_write(struct camera_io_master *io_master_info,
 	struct cam_sensor_i2c_reg_setting *write_setting)
 {
@@ -177,6 +178,7 @@ int32_t meizu_camera_io_dev_write(struct camera_io_master *io_master_info,
 
 	return rc;
 }
+#endif
 
 int32_t camera_io_dev_write_continuous(struct camera_io_master *io_master_info,
 	struct cam_sensor_i2c_reg_setting *write_setting,

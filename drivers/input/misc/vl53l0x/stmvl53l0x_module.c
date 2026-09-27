@@ -1029,6 +1029,7 @@ static DEVICE_ATTR(offset_cal, 0660/*S_IWUGO | S_IRUGO*/,
 				   stmvl53l0x_show_offset,
 				   stmvl53l0x_set_offset);
 
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 /*
  * Meizu (M1882) ToF QA attributes: laser_distance, signalRate, spad_cal1.
  * Reconstructed from the stock handlers (laser_distance_show/store,
@@ -1092,6 +1093,7 @@ static DEVICE_ATTR(signalRate, 0660, stmvl53l0x_show_signal_rate,
 					stmvl53l0x_store_signal_rate);
 static DEVICE_ATTR(spad_cal1, 0660, stmvl53l0x_show_spad_cal1,
 					stmvl53l0x_store_spad_cal1);
+#endif
 
 static ssize_t stmvl53l0x_set_spad(struct device *dev,
 				struct device_attribute *attr,
@@ -1229,9 +1231,11 @@ static struct attribute *stmvl53l0x_attributes[] = {
 	&dev_attr_set_offsetdata.attr,
 	&dev_attr_set_xtalkdata.attr,
 	&dev_attr_show_sensorid.attr,
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	&dev_attr_laser_distance.attr,
 	&dev_attr_signalRate.attr,
 	&dev_attr_spad_cal1.attr,
+#endif
 	NULL,
 };
 
@@ -1728,6 +1732,7 @@ static int stmvl53l0x_init_client(struct vl_data *data)
 	return 0;
 }
 
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 /*
  * Meizu (M1882) laser calibration reader.
  *
@@ -1760,6 +1765,7 @@ static void meizu_bsp_cam_apply_tof_cali(struct vl_data *data)
 	pr_info("meizu_bsp_cam_apply_tof_cali: cal=%u %u %u %u\n",
 		cal[0], cal[1], cal[2], cal[3]);
 }
+#endif
 
 static int stmvl53l0x_start(struct vl_data *data, uint8_t scaling,
 	enum init_mode_e mode)
@@ -1771,7 +1777,9 @@ static int stmvl53l0x_start(struct vl_data *data, uint8_t scaling,
 	dbg("Enter\n");
 
 	/* Meizu: load laser calibration from the "private" partition */
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_bsp_cam_apply_tof_cali(data);
+#endif
 
 	/* Power up */
 	rc = pmodule_func_tbl->power_up(data->client_object, &data->reset);
@@ -2079,7 +2087,7 @@ int stmvl53l0x_setup(struct vl_data *data)
 		err("%d error:%d\n", __LINE__, rc);
 		goto exit_unregister_dev_ps_1;
 	}
-#if IS_ENABLED(CONFIG_SPECTRA_CAMERA)
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	/* Meizu: expose the ToF device as /sys/class/meizu/laser */
 	meizu_sysfslink_register_name(&data->input_dev_ps->dev, "laser");
 #endif

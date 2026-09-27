@@ -14,6 +14,9 @@
 #include "cam_req_mgr_dev.h"
 #include "cam_eeprom_soc.h"
 #include "cam_eeprom_core.h"
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
+#include "cam_meizu.h"
+#endif
 #include "cam_debug_util.h"
 
 static long cam_eeprom_subdev_ioctl(struct v4l2_subdev *sd,
@@ -220,7 +223,9 @@ static int cam_eeprom_i2c_driver_probe(struct i2c_client *client,
 	e_ctrl->bridge_intf.ops.link_setup = NULL;
 	e_ctrl->bridge_intf.ops.apply_req = NULL;
 	v4l2_set_subdevdata(&e_ctrl->v4l2_dev_str.sd, e_ctrl);
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_bsp_eeprom_register(e_ctrl);
+#endif
 	e_ctrl->cam_eeprom_state = CAM_EEPROM_INIT;
 
 	return rc;
@@ -463,7 +468,9 @@ static int32_t cam_eeprom_platform_driver_probe(
 
 	platform_set_drvdata(pdev, e_ctrl);
 	v4l2_set_subdevdata(&e_ctrl->v4l2_dev_str.sd, e_ctrl);
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_bsp_eeprom_register(e_ctrl);
+#endif
 
 	e_ctrl->cam_eeprom_state = CAM_EEPROM_INIT;
 

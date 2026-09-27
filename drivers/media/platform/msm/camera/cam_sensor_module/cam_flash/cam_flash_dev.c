@@ -347,7 +347,11 @@ static int cam_flash_subdev_close(struct v4l2_subdev *sd,
 	}
 
 	mutex_lock(&fctrl->flash_mutex);
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_flash_shutdown(fctrl);
+#else
+	cam_flash_shutdown(fctrl);
+#endif
 	mutex_unlock(&fctrl->flash_mutex);
 
 	return 0;

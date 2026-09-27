@@ -232,6 +232,8 @@ int cam_flash_pmic_flush_request(struct cam_flash_ctrl *fctrl,
 void cam_flash_shutdown(struct cam_flash_ctrl *fctrl);
 int cam_flash_release_dev(struct cam_flash_ctrl *fctrl);
 /* Meizu (M1882) */
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 void meizu_flash_shutdown(struct cam_flash_ctrl *fctrl);
+#endif
 
 #endif /*_CAM_FLASH_DEV_H_*/

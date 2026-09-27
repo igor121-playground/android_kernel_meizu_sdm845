@@ -14,7 +14,9 @@
 #include "cam_req_mgr_dev.h"
 #include "cam_sensor_soc.h"
 #include "cam_sensor_core.h"
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 #include "cam_meizu.h"
+#endif
 
 static long cam_sensor_subdev_ioctl(struct v4l2_subdev *sd,
 	unsigned int cmd, void *arg)
@@ -199,7 +201,9 @@ static int32_t cam_sensor_driver_i2c_probe(struct i2c_client *client,
 
 	s_ctrl->sensordata->power_info.dev = soc_info->dev;
 	v4l2_set_subdevdata(&(s_ctrl->v4l2_dev_str.sd), s_ctrl);
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_cam_register_sensor(s_ctrl);
+#endif
 	return rc;
 unreg_subdev:
 	cam_unregister_subdev(&(s_ctrl->v4l2_dev_str));
@@ -322,7 +326,9 @@ static int32_t cam_sensor_driver_platform_probe(
 	s_ctrl->sensordata->power_info.dev = &pdev->dev;
 	platform_set_drvdata(pdev, s_ctrl);
 	v4l2_set_subdevdata(&(s_ctrl->v4l2_dev_str.sd), s_ctrl);
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_cam_register_sensor(s_ctrl);
+#endif
 
 	s_ctrl->sensor_state = CAM_SENSOR_INIT;
 

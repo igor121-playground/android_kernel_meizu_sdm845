@@ -71,8 +71,10 @@ int32_t cam_actuator_driver_cmd(struct cam_actuator_ctrl_t *a_ctrl, void *arg);
 void cam_actuator_shutdown(struct cam_actuator_ctrl_t *a_ctrl);
 
 /* Meizu (M1882) AF helpers */
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 int32_t meizu_actuator_enable(struct cam_actuator_ctrl_t *a_ctrl, int enable);
 int32_t meizu_get_af_pos(struct cam_actuator_ctrl_t *a_ctrl, u16 *pos);
 int32_t meizu_set_af_pos(struct cam_actuator_ctrl_t *a_ctrl, u16 pos);
+#endif
 
 #endif /* _CAM_ACTUATOR_CORE_H_ */

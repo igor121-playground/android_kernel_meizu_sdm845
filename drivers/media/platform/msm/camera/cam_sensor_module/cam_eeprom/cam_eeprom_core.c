@@ -17,7 +17,9 @@
 
 #include "cam_eeprom_core.h"
 #include "cam_eeprom_soc.h"
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 #include "cam_meizu.h"
+#endif
 #include "cam_debug_util.h"
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
@@ -143,8 +145,11 @@ static int cam_eeprom_read_memory(struct cam_eeprom_ctrl_t *e_ctrl,
 		}
 	}
 
-	if (!rc && block->mapdata && block->num_data)
+	if (!rc && block->mapdata && block->num_data) {
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 		meizu_cam_register_otp(block->mapdata, block->num_data);
+#endif
+	}
 
 	return rc;
 }
@@ -1041,6 +1046,7 @@ release_mutex:
 	return rc;
 }
 
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 /*
  * Meizu (M1882) EEPROM byte writer.
  *
@@ -1091,4 +1097,5 @@ int meizu_bsp_eeprom_write(u8 *data, int len, int start_addr)
 
 	return rc;
 }
+#endif
 

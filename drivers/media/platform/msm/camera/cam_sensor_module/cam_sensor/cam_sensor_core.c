@@ -1263,6 +1263,7 @@ int32_t cam_sensor_flush_request(struct cam_req_mgr_flush_request *flush_req)
  * state so userspace can arm/disarm the gyro via /sys/class/meizu/gyro_req;
  * the sensor shutdown path also clears it.  Functional re-implementation.
  */
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 static int g_meizu_gyro_req_state = -1;
 
 int32_t cam_gyro_req_mgr(struct cam_sensor_ctrl_t *s_ctrl, int enable)
@@ -1279,3 +1280,4 @@ int32_t cam_gyro_req_mgr(struct cam_sensor_ctrl_t *s_ctrl, int enable)
 
 	return 0;
 }
+#endif

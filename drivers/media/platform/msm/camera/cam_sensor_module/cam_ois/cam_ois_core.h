@@ -39,12 +39,14 @@ int cam_ois_driver_cmd(struct cam_ois_ctrl_t *e_ctrl, void *arg);
 void cam_ois_shutdown(struct cam_ois_ctrl_t *o_ctrl);
 
 /* Meizu (M1882) OIS init registers */
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 int meizu_init0_settings(struct cam_ois_ctrl_t *o_ctrl);
 
 /* Meizu (M1882) OIS factory calibration */
 int meizu_ois_cali_check(void);
 void meizu_ois_cali_get_result(s16 *x, s16 *y);
 int meizu_ois_cali_exec(struct cam_ois_ctrl_t *o_ctrl);
+#endif
 
 #endif
 /* _CAM_OIS_CORE_H_ */

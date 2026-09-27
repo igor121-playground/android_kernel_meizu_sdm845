@@ -97,8 +97,10 @@ int32_t camera_io_dev_write(struct camera_io_master *io_master_info,
  * bits of the address and the low byte becomes the data. Reconstructed from
  * the stock M1882 kernel (meizu_camera_io_dev_write).
  */
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 int32_t meizu_camera_io_dev_write(struct camera_io_master *io_master_info,
 	struct cam_sensor_i2c_reg_setting *write_setting);
+#endif
 
 /**
  * @io_master_info: I2C/SPI master information

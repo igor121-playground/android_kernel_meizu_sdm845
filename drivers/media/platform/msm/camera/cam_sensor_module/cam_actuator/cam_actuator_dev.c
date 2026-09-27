@@ -15,7 +15,9 @@
 #include "cam_actuator_soc.h"
 #include "cam_actuator_core.h"
 #include "cam_trace.h"
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 #include "cam_meizu.h"
+#endif
 
 static long cam_actuator_subdev_ioctl(struct v4l2_subdev *sd,
 	unsigned int cmd, void *arg)
@@ -218,7 +220,9 @@ static int32_t cam_actuator_driver_i2c_probe(struct i2c_client *client,
 		cam_actuator_apply_request;
 
 	v4l2_set_subdevdata(&(a_ctrl->v4l2_dev_str.sd), a_ctrl);
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_cam_register_actuator(a_ctrl);
+#endif
 
 	a_ctrl->cam_act_state = CAM_ACTUATOR_INIT;
 
@@ -376,7 +380,9 @@ static int32_t cam_actuator_driver_platform_probe(
 
 	platform_set_drvdata(pdev, a_ctrl);
 	v4l2_set_subdevdata(&a_ctrl->v4l2_dev_str.sd, a_ctrl);
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_cam_register_actuator(a_ctrl);
+#endif
 	a_ctrl->cam_act_state = CAM_ACTUATOR_INIT;
 
 	return rc;
@@ -423,7 +429,9 @@ static int __init cam_actuator_driver_init(void)
 {
 	int32_t rc = 0;
 
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_cam_init();
+#endif
 
 	rc = platform_driver_register(&cam_actuator_platform_driver);
 	if (rc < 0) {
@@ -442,7 +450,9 @@ static void __exit cam_actuator_driver_exit(void)
 {
 	platform_driver_unregister(&cam_actuator_platform_driver);
 	i2c_del_driver(&cam_actuator_driver_i2c);
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_cam_exit();
+#endif
 }
 
 module_init(cam_actuator_driver_init);

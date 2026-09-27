@@ -9,4 +9,4 @@ obj-$(CONFIG_SPECTRA_CAMERA) += cam_flash/
 obj-$(CONFIG_SPECTRA_CAMERA) += cam_eeprom/
 obj-$(CONFIG_SPECTRA_CAMERA) += cam_ois/
 obj-$(CONFIG_SPECTRA_CAMERA) += cam_ir_led/
-obj-$(CONFIG_SPECTRA_CAMERA) += cam_meizu/
+obj-$(CONFIG_MEIZU_CAMERA) += cam_meizu/

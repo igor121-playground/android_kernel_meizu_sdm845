@@ -14,7 +14,9 @@
 #include "cam_req_mgr_dev.h"
 #include "cam_ois_soc.h"
 #include "cam_ois_core.h"
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 #include "cam_meizu.h"
+#endif
 #include "cam_debug_util.h"
 
 static long cam_ois_subdev_ioctl(struct v4l2_subdev *sd,
@@ -305,7 +307,9 @@ static int32_t cam_ois_platform_driver_probe(
 
 	platform_set_drvdata(pdev, o_ctrl);
 	v4l2_set_subdevdata(&o_ctrl->v4l2_dev_str.sd, o_ctrl);
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	meizu_cam_register_ois(o_ctrl);
+#endif
 
 	o_ctrl->cam_ois_state = CAM_OIS_INIT;
 

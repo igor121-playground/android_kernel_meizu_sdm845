@@ -25,8 +25,10 @@ int32_t cam_eeprom_parse_read_memory_map(struct device_node *of_node,
 void cam_eeprom_shutdown(struct cam_eeprom_ctrl_t *e_ctrl);
 
 /* Meizu (M1882) EEPROM byte writer */
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 void meizu_bsp_eeprom_register(struct cam_eeprom_ctrl_t *e_ctrl);
 int meizu_bsp_eeprom_write(u8 *data, int len, int start_addr);
+#endif
 
 #endif
 /* _CAM_EEPROM_CORE_H_ */

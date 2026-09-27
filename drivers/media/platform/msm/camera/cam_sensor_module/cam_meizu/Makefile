@@ -12,4 +12,4 @@ ccflags-y += -Idrivers/media/platform/msm/camera/cam_core
 ccflags-y += -Idrivers/media/platform/msm/camera/cam_smmu
 ccflags-y += -Idrivers/media/platform/msm/camera/cam_cpas/include
 
-obj-$(CONFIG_SPECTRA_CAMERA) += cam_meizu.o
+obj-$(CONFIG_MEIZU_CAMERA) += cam_meizu.o

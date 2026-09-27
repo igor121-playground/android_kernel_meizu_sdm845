@@ -13,6 +13,16 @@ menuconfig SPECTRA_CAMERA
       Enabling this adds support for the camera driver stack including sensor,
       IFE and postprocessing drivers.
 
+config MEIZU_CAMERA
+    bool "Meizu camera vendor glue (M1882)"
+    depends on SPECTRA_CAMERA
+    default n
+    ---help---
+      Enable the Meizu-specific camera glue layer (AF/OIS calibration and
+      sysfs, OTP validation, /sys/class/meizu, ToF calibration, camera PMIC
+      hooks) used on the Meizu 16th / 16th Plus (m1882).  Requires the
+      Qualcomm Spectra camera stack.
+
 menuconfig MSM_CAMERA
     bool "QTI MSM camera and video capture support"
     depends on ARCH_QCOM && VIDEO_V4L2 && I2C

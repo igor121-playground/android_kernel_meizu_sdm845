@@ -17,7 +17,9 @@
 #include "cam_ois_core.h"
 #include "cam_ois_soc.h"
 #include "cam_sensor_util.h"
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 #include "cam_eeprom_core.h"
+#endif
 #include "cam_debug_util.h"
 #include "cam_res_mgr_api.h"
 #include "cam_common_util.h"
@@ -168,8 +170,10 @@ static int cam_ois_power_up(struct cam_ois_ctrl_t *o_ctrl)
 	rc = camera_io_init(&o_ctrl->io_master_info);
 	if (rc)
 		CAM_ERR(CAM_OIS, "cci_init failed: rc: %d", rc);
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 	else
 		meizu_init0_settings(o_ctrl);
+#endif
 
 	return rc;
 }
@@ -850,6 +854,7 @@ release_mutex:
 	return rc;
 }
 
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 /*
  * Meizu (M1882) OIS initialisation registers.
  *
@@ -1096,3 +1101,4 @@ err_io:
 	CAM_ERR(CAM_OIS, "OIS cali io error %d", rc);
 	return rc;
 }
+#endif

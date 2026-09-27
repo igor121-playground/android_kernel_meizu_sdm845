@@ -1768,6 +1768,7 @@ void cam_flash_shutdown(struct cam_flash_ctrl *fctrl)
 	fctrl->flash_state = CAM_FLASH_STATE_INIT;
 }
 
+#if IS_ENABLED(CONFIG_MEIZU_CAMERA)
 /*
  * Meizu (M1882) flash shutdown: make sure the flash LEDs are switched off
  * before the normal teardown. Reconstructed from the stock
@@ -1781,6 +1782,7 @@ void meizu_flash_shutdown(struct cam_flash_ctrl *fctrl)
 	cam_flash_off(fctrl);
 	cam_flash_shutdown(fctrl);
 }
+#endif
 
 int cam_flash_apply_request(struct cam_req_mgr_apply_request *apply)
 {
