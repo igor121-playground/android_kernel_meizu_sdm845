@@ -39,6 +39,19 @@ int mz_part_read(const char *part, char *buf, size_t count, loff_t offset);
 int mz_get_hw_version(void);
 enum mz_device_model mz_get_model(void);
 
+/*
+ * Meizu sysfs link helpers: expose a device under the shared "meizu" class
+ * (/sys/class/meizu/<name>).  Implemented in the camera Meizu glue module
+ * (cam_meizu.c); available when CONFIG_SPECTRA_CAMERA is enabled.
+ */
+struct kobject;
+int meizu_sysfslink_register(struct device *dev);
+int meizu_sysfslink_register_name(struct device *dev, const char *name);
+void meizu_sysfslink_remove_name(const char *name);
+void meizu_sysfslink_unregister_name(const char *name);
+struct kobject *meizu_sysfslink_get_kobj(const char *name);
+void meizu_sysfslink_unregister(struct device *dev);
+
 /* Read data from 'reserved' partition */
 static inline int mz_reserved_read(char *buf, size_t count, loff_t offset)
 {

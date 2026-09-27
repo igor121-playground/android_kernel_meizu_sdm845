@@ -12,10 +12,12 @@
 
 #include <linux/module.h>
 #include <linux/firmware.h>
+#include <linux/delay.h>
 #include <cam_sensor_cmn_header.h>
 #include "cam_ois_core.h"
 #include "cam_ois_soc.h"
 #include "cam_sensor_util.h"
+#include "cam_eeprom_core.h"
 #include "cam_debug_util.h"
 #include "cam_res_mgr_api.h"
 #include "cam_common_util.h"
@@ -166,6 +168,8 @@ static int cam_ois_power_up(struct cam_ois_ctrl_t *o_ctrl)
 	rc = camera_io_init(&o_ctrl->io_master_info);
 	if (rc)
 		CAM_ERR(CAM_OIS, "cci_init failed: rc: %d", rc);
+	else
+		meizu_init0_settings(o_ctrl);
 
 	return rc;
 }
@@ -843,5 +847,252 @@ int cam_ois_driver_cmd(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 	}
 release_mutex:
 	mutex_unlock(&(o_ctrl->ois_mutex));
+	return rc;
+}
+
+/*
+ * Meizu (M1882) OIS initialisation registers.
+ *
+ * Reconstructed from the stock meizu_init0_settings(): write the eight OIS
+ * init registers through meizu_camera_io_dev_write(). Called during OIS
+ * power-up.
+ */
+int meizu_init0_settings(struct cam_ois_ctrl_t *o_ctrl)
+{
+	int rc = 0;
+	const int size = 8;
+	struct cam_sensor_i2c_reg_array *reg_setting;
+	struct cam_sensor_i2c_reg_setting write_setting;
+
+	if (!o_ctrl) {
+		CAM_ERR(CAM_OIS, "failed: o_ctrl %pK", o_ctrl);
+		return -EINVAL;
+	}
+
+	CAM_INFO(CAM_OIS, "enter meizu_init0_settings");
+
+	reg_setting = kcalloc(size, sizeof(*reg_setting), GFP_KERNEL);
+	if (!reg_setting)
+		return -ENOMEM;
+
+	reg_setting[0].reg_addr = 0x8262;
+	reg_setting[0].reg_data = 0xbf03;
+	reg_setting[1].reg_addr = 0x8263;
+	reg_setting[1].reg_data = 0x9f05;
+	reg_setting[2].reg_addr = 0x8264;
+	reg_setting[2].reg_data = 0x6040;
+	reg_setting[3].reg_addr = 0x8260;
+	reg_setting[3].reg_data = 0x1130;
+	reg_setting[4].reg_addr = 0x8265;
+	reg_setting[4].reg_data = 0x8000;
+	reg_setting[5].reg_addr = 0x8261;
+	reg_setting[5].reg_data = 0x280;
+	reg_setting[6].reg_addr = 0x8261;
+	reg_setting[6].reg_data = 0x380;
+	reg_setting[7].reg_addr = 0x8261;
+	reg_setting[7].reg_data = 0x988;
+
+	write_setting.reg_setting = reg_setting;
+	write_setting.size = size;
+	write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
+	write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_WORD;
+	write_setting.delay = 0;
+
+	rc = meizu_camera_io_dev_write(&o_ctrl->io_master_info,
+		&write_setting);
+	if (rc < 0)
+		CAM_ERR(CAM_OIS, "meizu_init0_settings failed %d", rc);
+
+	kfree(reg_setting);
+	return rc;
+}
+
+/*
+ * Meizu (M1882) OIS factory calibration.
+ *
+ * Reconstructed from the stock meizu_ois_cali_exec():
+ *   1. wait for the OIS status registers 0x8455/0x8456 to become non-zero;
+ *   2. write 0x847f <- 0xc0c to start calibration;
+ *   3. average 16 reads of 0x8455/0x8456 into gyro_cali_result_x/y;
+ *   4. write the byte-swapped results to 0x8406 / 0x8486;
+ *   5. poll 0x8407 / 0x8487 until both are within +/-150 (up to 10 tries);
+ *   6. write the 7-byte record {1, x_hi, x_lo, y_hi, y_lo, csum_hi, csum_lo}
+ *      to EEPROM offset 0x1c58, checksum = (x_lo+x_hi+y_lo+y_hi) % 65535 + 1.
+ * The result is reported through meizu_ois_cali_check()/the ois_cali sysfs.
+ */
+static s16 meizu_gyro_cali_x;
+static s16 meizu_gyro_cali_y;
+static int meizu_ois_eeprom_result = -1;
+static int meizu_ois_cali_mode = 3;
+
+int meizu_ois_cali_check(void)
+{
+	return meizu_ois_eeprom_result;
+}
+
+void meizu_ois_cali_get_result(s16 *x, s16 *y)
+{
+	if (x)
+		*x = meizu_gyro_cali_x;
+	if (y)
+		*y = meizu_gyro_cali_y;
+}
+
+static int meizu_ois_read_word(struct cam_ois_ctrl_t *o_ctrl,
+	uint32_t addr, uint32_t *val)
+{
+	return camera_io_dev_read(&o_ctrl->io_master_info, addr, val,
+		CAMERA_SENSOR_I2C_TYPE_WORD, CAMERA_SENSOR_I2C_TYPE_WORD);
+}
+
+static int meizu_ois_write_word(struct cam_ois_ctrl_t *o_ctrl,
+	uint16_t addr, uint16_t val)
+{
+	struct cam_sensor_i2c_reg_array reg_setting;
+	struct cam_sensor_i2c_reg_setting write_setting;
+
+	memset(&reg_setting, 0, sizeof(reg_setting));
+	reg_setting.reg_addr = addr;
+	reg_setting.reg_data = val;
+
+	write_setting.reg_setting = &reg_setting;
+	write_setting.size = 1;
+	write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
+	write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_WORD;
+	write_setting.delay = 0;
+
+	return meizu_camera_io_dev_write(&o_ctrl->io_master_info,
+		&write_setting);
+}
+
+int meizu_ois_cali_exec(struct cam_ois_ctrl_t *o_ctrl)
+{
+	int rc, i, tries;
+	uint32_t data = 0, data2 = 0;
+	int sum_x = 0, sum_y = 0;
+	uint32_t x_hi, x_lo, y_hi, y_lo, csum;
+	uint16_t x_swap, y_swap;
+	u8 record[7];
+
+	if (!o_ctrl)
+		return -EINVAL;
+
+	meizu_ois_eeprom_result = -1;
+
+	if (meizu_ois_cali_mode != 3) {
+		meizu_ois_eeprom_result = -2;
+		CAM_ERR(CAM_OIS, "invalid OIS cali mode %d",
+			meizu_ois_cali_mode);
+		return -5;
+	}
+
+	/* 1. wait for the OIS to become ready */
+	for (i = 0; i < 15; i++) {
+		rc = meizu_ois_read_word(o_ctrl, 0x8455, &data);
+		if (rc < 0)
+			goto err_io;
+		rc = meizu_ois_read_word(o_ctrl, 0x8456, &data2);
+		if (rc < 0)
+			goto err_io;
+
+		if ((s16)((data & 0xffff) | (data2 & 0xffff)))
+			break;
+		udelay(50);
+	}
+
+	if (i > 8) {
+		meizu_ois_eeprom_result = -2;
+		CAM_ERR(CAM_OIS, "OIS not ready");
+		return -19;
+	}
+
+	/* 2. start calibration */
+	rc = meizu_ois_write_word(o_ctrl, 0x847f, 0xc0c);
+	if (rc < 0)
+		goto err_io;
+
+	/* 3. average 16 samples */
+	for (i = 0; i < 16; i++) {
+		rc = meizu_ois_read_word(o_ctrl, 0x8455, &data);
+		if (rc < 0)
+			goto err_io;
+		rc = meizu_ois_read_word(o_ctrl, 0x8456, &data2);
+		if (rc < 0)
+			goto err_io;
+
+		sum_x += (s16)data;
+		sum_y += (s16)data2;
+		udelay(50);
+	}
+
+	meizu_gyro_cali_x = (s16)(sum_x / 16);
+	meizu_gyro_cali_y = (s16)(sum_y / 16);
+
+	x_hi = ((uint16_t)meizu_gyro_cali_x >> 8) & 0xff;
+	x_lo = meizu_gyro_cali_x & 0xff;
+	y_hi = ((uint16_t)meizu_gyro_cali_y >> 8) & 0xff;
+	y_lo = meizu_gyro_cali_y & 0xff;
+
+	x_swap = (x_lo << 8) | x_hi;
+	y_swap = (y_lo << 8) | y_hi;
+
+	/* 4. push the calibration to the OIS */
+	rc = meizu_ois_write_word(o_ctrl, 0x8406, x_swap);
+	if (rc < 0)
+		goto err_io;
+	rc = meizu_ois_write_word(o_ctrl, 0x8486, y_swap);
+	if (rc < 0)
+		goto err_io;
+
+	msleep(1500);
+
+	/* 5. wait for the result to settle */
+	for (tries = 0; tries <= 10; tries++) {
+		s16 rx, ry;
+
+		rc = meizu_ois_read_word(o_ctrl, 0x8407, &data);
+		if (rc < 0)
+			goto err_io;
+		rc = meizu_ois_read_word(o_ctrl, 0x8487, &data2);
+		if (rc < 0)
+			goto err_io;
+
+		rx = (s16)data;
+		ry = (s16)data2;
+		if ((rx > -0x96 && rx < 0x96) && (ry > -0x96 && ry < 0x96))
+			break;
+	}
+
+	if (tries > 10) {
+		meizu_ois_eeprom_result = -3;
+		CAM_ERR(CAM_OIS, "OIS cali out of range");
+		return -4;
+	}
+
+	/* 6. persist to EEPROM */
+	csum = ((x_lo + x_hi + y_lo + y_hi) % 65535) + 1;
+	record[0] = 1;
+	record[1] = x_hi;
+	record[2] = x_lo;
+	record[3] = y_hi;
+	record[4] = y_lo;
+	record[5] = (csum >> 8) & 0xff;
+	record[6] = csum & 0xff;
+
+	rc = meizu_bsp_eeprom_write(record, 7, 0x1c58);
+	if (rc < 0) {
+		meizu_ois_eeprom_result = -5;
+		CAM_ERR(CAM_OIS, "OIS cali eeprom write failed %d", rc);
+		return rc;
+	}
+
+	meizu_ois_eeprom_result = 0;
+	CAM_INFO(CAM_OIS, "OIS calibration done x=%d y=%d",
+		meizu_gyro_cali_x, meizu_gyro_cali_y);
+	return 0;
+
+err_io:
+	meizu_ois_eeprom_result = -2;
+	CAM_ERR(CAM_OIS, "OIS cali io error %d", rc);
 	return rc;
 }

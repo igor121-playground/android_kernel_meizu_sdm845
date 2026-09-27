@@ -90,6 +90,19 @@ int32_t camera_io_dev_write(struct camera_io_master *io_master_info,
 /**
  * @io_master_info: I2C/SPI master information
  * @write_setting: write settings information
+ *
+ * Meizu variant of camera_io_dev_write(). It writes every register of the
+ * write setting individually (size = 1) and applies the Meizu quirk for
+ * register address 0xc4: the two high bits of the data select the low two
+ * bits of the address and the low byte becomes the data. Reconstructed from
+ * the stock M1882 kernel (meizu_camera_io_dev_write).
+ */
+int32_t meizu_camera_io_dev_write(struct camera_io_master *io_master_info,
+	struct cam_sensor_i2c_reg_setting *write_setting);
+
+/**
+ * @io_master_info: I2C/SPI master information
+ * @write_setting: write settings information
  * @cam_sensor_i2c_write_flag: differentiate between burst & seq
  *
  * This API abstracts write functionality based on master type and

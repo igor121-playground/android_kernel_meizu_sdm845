@@ -120,6 +120,64 @@ int32_t camera_io_dev_write(struct camera_io_master *io_master_info,
 	}
 }
 
+int32_t meizu_camera_io_dev_write(struct camera_io_master *io_master_info,
+	struct cam_sensor_i2c_reg_setting *write_setting)
+{
+	struct cam_sensor_i2c_reg_array setting;
+	struct cam_sensor_i2c_reg_setting single;
+	int32_t rc = -EINVAL;
+	uint32_t i;
+
+	if (!write_setting || !io_master_info) {
+		CAM_ERR(CAM_SENSOR,
+			"Invalid params ws: %pK io: %pK",
+			write_setting, io_master_info);
+		return -EINVAL;
+	}
+
+	if (!write_setting->size)
+		return 0;
+
+	for (i = 0; i < write_setting->size; i++) {
+		setting.reg_addr = write_setting->reg_setting[i].reg_addr;
+		setting.reg_data = write_setting->reg_setting[i].reg_data;
+		setting.delay = write_setting->reg_setting[i].delay;
+		setting.data_mask = write_setting->reg_setting[i].data_mask;
+
+		if (setting.reg_addr == 0xc4) {
+			setting.reg_addr =
+				0xc4 | ((setting.reg_data >> 8) & 0x3);
+			setting.reg_data &= 0xff;
+		}
+
+		single.reg_setting = &setting;
+		single.size = 1;
+		single.addr_type = write_setting->addr_type;
+		single.data_type = write_setting->data_type;
+		single.delay = write_setting->delay;
+
+		if (io_master_info->master_type == CCI_MASTER) {
+			rc = cam_cci_i2c_write_table(io_master_info, &single);
+		} else if (io_master_info->master_type == I2C_MASTER) {
+			rc = cam_qup_i2c_write_table(io_master_info, &single);
+		} else if (io_master_info->master_type == SPI_MASTER) {
+			rc = cam_spi_write_table(io_master_info, &single);
+		} else {
+			CAM_ERR(CAM_SENSOR, "Invalid Comm. Master:%d",
+				io_master_info->master_type);
+			return -EINVAL;
+		}
+
+		if (rc < 0) {
+			CAM_ERR(CAM_SENSOR,
+				"meizu_camera_io_dev_write failed %d", rc);
+			return -EINVAL;
+		}
+	}
+
+	return rc;
+}
+
 int32_t camera_io_dev_write_continuous(struct camera_io_master *io_master_info,
 	struct cam_sensor_i2c_reg_setting *write_setting,
 	uint8_t cam_sensor_i2c_write_flag)

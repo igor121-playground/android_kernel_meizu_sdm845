@@ -12,10 +12,12 @@
 
 #include <linux/module.h>
 #include <linux/crc32.h>
+#include <linux/delay.h>
 #include <media/cam_sensor.h>
 
 #include "cam_eeprom_core.h"
 #include "cam_eeprom_soc.h"
+#include "cam_meizu.h"
 #include "cam_debug_util.h"
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
@@ -140,6 +142,10 @@ static int cam_eeprom_read_memory(struct cam_eeprom_ctrl_t *e_ctrl,
 			}
 		}
 	}
+
+	if (!rc && block->mapdata && block->num_data)
+		meizu_cam_register_otp(block->mapdata, block->num_data);
+
 	return rc;
 }
 
@@ -1031,6 +1037,57 @@ int32_t cam_eeprom_driver_cmd(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 
 release_mutex:
 	mutex_unlock(&(e_ctrl->eeprom_mutex));
+
+	return rc;
+}
+
+/*
+ * Meizu (M1882) EEPROM byte writer.
+ *
+ * Reconstructed from the stock kernel (meizu_bsp_eeprom_write). Stock kept a
+ * global eeprom ctrl pointer; here it is registered from the eeprom probe.
+ * Writes each byte of @data to the EEPROM starting at @start_addr, one byte
+ * per camera_io_dev_write() with 5 ms in between. On error it logs and keeps
+ * going (matching stock), returning the last error/status.
+ */
+static struct cam_eeprom_ctrl_t *g_meizu_e_ctrl;
+
+void meizu_bsp_eeprom_register(struct cam_eeprom_ctrl_t *e_ctrl)
+{
+	g_meizu_e_ctrl = e_ctrl;
+}
+
+int meizu_bsp_eeprom_write(u8 *data, int len, int start_addr)
+{
+	int i, rc = 0;
+	struct cam_sensor_i2c_reg_array reg_setting;
+	struct cam_sensor_i2c_reg_setting write_setting;
+
+	CAM_INFO(CAM_EEPROM, "enter meizu_bsp_eeprom_write");
+
+	if (!g_meizu_e_ctrl || !data)
+		return -EINVAL;
+
+	memset(&reg_setting, 0, sizeof(reg_setting));
+
+	write_setting.reg_setting = &reg_setting;
+	write_setting.size = 1;
+	write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
+	write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_BYTE;
+	write_setting.delay = 0;
+
+	for (i = start_addr; i < start_addr + len; i++) {
+		reg_setting.reg_addr = i;
+		reg_setting.reg_data = data[i - start_addr];
+
+		rc = camera_io_dev_write(&g_meizu_e_ctrl->io_master_info,
+			&write_setting);
+		if (rc < 0)
+			CAM_ERR(CAM_EEPROM,
+				"meizu_bsp_eeprom_write failed %d", rc);
+
+		usleep_range(5000, 5000);
+	}
 
 	return rc;
 }

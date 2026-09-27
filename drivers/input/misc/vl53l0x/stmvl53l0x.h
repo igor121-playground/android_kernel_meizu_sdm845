@@ -172,6 +172,16 @@ struct vl_data {
 	uint8_t interrupt_received;
 	int32_t default_offset_calibration;
 	unsigned int default_xtalk_Compensation;
+
+	/* Meizu laser calibration, read from the "private" partition.
+	 * meizu_bsp_cam_apply_tof_cali() fills these in at start time.
+	 */
+	uint32_t meizu_laser_cal0;
+	uint32_t meizu_laser_cal1;
+	uint32_t meizu_laser_cal2;
+	uint32_t meizu_laser_cal3;
+	uint32_t meizu_laser_cal_valid;
+	int meizu_signal_rate;
 };
 
 /*

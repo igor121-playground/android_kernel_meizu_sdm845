@@ -231,5 +231,7 @@ int cam_flash_pmic_flush_request(struct cam_flash_ctrl *fctrl,
 	enum cam_flash_flush_type, uint64_t req_id);
 void cam_flash_shutdown(struct cam_flash_ctrl *fctrl);
 int cam_flash_release_dev(struct cam_flash_ctrl *fctrl);
+/* Meizu (M1882) */
+void meizu_flash_shutdown(struct cam_flash_ctrl *fctrl);
 
 #endif /*_CAM_FLASH_DEV_H_*/

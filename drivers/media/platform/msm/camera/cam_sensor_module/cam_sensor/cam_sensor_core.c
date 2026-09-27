@@ -1257,3 +1257,25 @@ int32_t cam_sensor_flush_request(struct cam_req_mgr_flush_request *flush_req)
 			flush_req->req_id);
 	return rc;
 }
+
+/*
+ * Meizu gyro request manager (M1882).  Stock keeps the OIS gyro request
+ * state so userspace can arm/disarm the gyro via /sys/class/meizu/gyro_req;
+ * the sensor shutdown path also clears it.  Functional re-implementation.
+ */
+static int g_meizu_gyro_req_state = -1;
+
+int32_t cam_gyro_req_mgr(struct cam_sensor_ctrl_t *s_ctrl, int enable)
+{
+	if (!s_ctrl)
+		return -EINVAL;
+
+	if (g_meizu_gyro_req_state == !!enable)
+		return 0;
+
+	g_meizu_gyro_req_state = !!enable;
+	CAM_INFO(CAM_SENSOR, "meizu gyro request %s",
+		enable ? "on" : "off");
+
+	return 0;
+}

@@ -30,6 +30,7 @@
 #include <linux/miscdevice.h>
 #include <linux/kernel.h>
 #include <linux/fs.h>
+#include <linux/meizu.h>
 #include <linux/time.h>
 #include <linux/platform_device.h>
 #include <linux/kobject.h>
@@ -1028,6 +1029,70 @@ static DEVICE_ATTR(offset_cal, 0660/*S_IWUGO | S_IRUGO*/,
 				   stmvl53l0x_show_offset,
 				   stmvl53l0x_set_offset);
 
+/*
+ * Meizu (M1882) ToF QA attributes: laser_distance, signalRate, spad_cal1.
+ * Reconstructed from the stock handlers (laser_distance_show/store,
+ * signalRate_show/store, spad_cali1_show/store): the stores are no-ops that
+ * return the count, the shows report the laser calibration words read from the
+ * "private" partition and the last signal rate.
+ */
+static ssize_t stmvl53l0x_show_laser_distance(struct device *dev,
+					struct device_attribute *attr,
+					char *buf)
+{
+	struct vl_data *data = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d %d %d %d\n",
+		data->meizu_laser_cal0, data->meizu_laser_cal1,
+		data->meizu_laser_cal2, data->meizu_laser_cal3);
+}
+
+static ssize_t stmvl53l0x_store_laser_distance(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	return count;
+}
+
+static ssize_t stmvl53l0x_show_signal_rate(struct device *dev,
+					struct device_attribute *attr,
+					char *buf)
+{
+	struct vl_data *data = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", data->meizu_signal_rate);
+}
+
+static ssize_t stmvl53l0x_store_signal_rate(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	return count;
+}
+
+static ssize_t stmvl53l0x_show_spad_cal1(struct device *dev,
+					struct device_attribute *attr,
+					char *buf)
+{
+	struct vl_data *data = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", data->meizu_laser_cal3);
+}
+
+static ssize_t stmvl53l0x_store_spad_cal1(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	return count;
+}
+
+static DEVICE_ATTR(laser_distance, 0660, stmvl53l0x_show_laser_distance,
+					stmvl53l0x_store_laser_distance);
+static DEVICE_ATTR(signalRate, 0660, stmvl53l0x_show_signal_rate,
+					stmvl53l0x_store_signal_rate);
+static DEVICE_ATTR(spad_cal1, 0660, stmvl53l0x_show_spad_cal1,
+					stmvl53l0x_store_spad_cal1);
+
 static ssize_t stmvl53l0x_set_spad(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
@@ -1164,6 +1229,9 @@ static struct attribute *stmvl53l0x_attributes[] = {
 	&dev_attr_set_offsetdata.attr,
 	&dev_attr_set_xtalkdata.attr,
 	&dev_attr_show_sensorid.attr,
+	&dev_attr_laser_distance.attr,
+	&dev_attr_signalRate.attr,
+	&dev_attr_spad_cal1.attr,
 	NULL,
 };
 
@@ -1660,6 +1728,39 @@ static int stmvl53l0x_init_client(struct vl_data *data)
 	return 0;
 }
 
+/*
+ * Meizu (M1882) laser calibration reader.
+ *
+ * Reconstructed from the stock meizu_bsp_cam_apply_tof_cali(): read 16 bytes
+ * at offset 0x12800 from the "private" partition and keep them for the ToF
+ * driver.  Stock used sd_partition_rw(); this tree provides the equivalent
+ * exported helper mz_private_read().
+ */
+static void meizu_bsp_cam_apply_tof_cali(struct vl_data *data)
+{
+	u32 cal[4] = {0};
+	int rc;
+
+	if (!data)
+		return;
+
+	rc = mz_private_read((char *)cal, sizeof(cal), 0x12800);
+	if (rc < 0) {
+		err("meizu_bsp_cam_apply_tof_cali: laser_data_read_emmc failed %d\n",
+			rc);
+		return;
+	}
+
+	data->meizu_laser_cal0 = cal[0];
+	data->meizu_laser_cal1 = cal[1];
+	data->meizu_laser_cal2 = cal[2];
+	data->meizu_laser_cal3 = cal[3];
+	data->meizu_laser_cal_valid = 3;
+
+	pr_info("meizu_bsp_cam_apply_tof_cali: cal=%u %u %u %u\n",
+		cal[0], cal[1], cal[2], cal[3]);
+}
+
 static int stmvl53l0x_start(struct vl_data *data, uint8_t scaling,
 	enum init_mode_e mode)
 {
@@ -1668,6 +1769,9 @@ static int stmvl53l0x_start(struct vl_data *data, uint8_t scaling,
 	int8_t Status = VL_ERROR_NONE;
 
 	dbg("Enter\n");
+
+	/* Meizu: load laser calibration from the "private" partition */
+	meizu_bsp_cam_apply_tof_cali(data);
 
 	/* Power up */
 	rc = pmodule_func_tbl->power_up(data->client_object, &data->reset);
@@ -1975,6 +2079,10 @@ int stmvl53l0x_setup(struct vl_data *data)
 		err("%d error:%d\n", __LINE__, rc);
 		goto exit_unregister_dev_ps_1;
 	}
+#if IS_ENABLED(CONFIG_SPECTRA_CAMERA)
+	/* Meizu: expose the ToF device as /sys/class/meizu/laser */
+	meizu_sysfslink_register_name(&data->input_dev_ps->dev, "laser");
+#endif
 	/* init default device parameter value */
 	data->enable_ps_sensor = 0;
 	data->reset = 1;

@@ -162,7 +162,7 @@ static int32_t cam_actuator_i2c_modes_util(
 	uint32_t i, size;
 
 	if (i2c_list->op_code == CAM_SENSOR_I2C_WRITE_RANDOM) {
-		rc = camera_io_dev_write(io_master_info,
+		rc = meizu_camera_io_dev_write(io_master_info,
 			&(i2c_list->i2c_settings));
 		if (rc < 0) {
 			CAM_ERR(CAM_ACTUATOR,
@@ -949,4 +949,107 @@ int32_t cam_actuator_flush_request(struct cam_req_mgr_flush_request *flush_req)
 			"Flush request id:%lld not found in the pending list",
 			flush_req->req_id);
 	return rc;
+}
+
+/*
+ * Meizu AF helpers (M1882). Reconstructed from the stock kernel
+ * (meizu_actuator_enable / meizu_get_af_pos / meizu_set_af_pos).
+ *
+ * NOTE: the stock actuator also ran an actuator firmware download between
+ * power-up and the init write; this tree's actuator has no fw_download, so it
+ * is omitted here.
+ */
+int32_t meizu_get_af_pos(struct cam_actuator_ctrl_t *a_ctrl, u16 *pos)
+{
+	int32_t rc;
+	uint32_t data = 0;
+
+	if (!a_ctrl || !pos)
+		return -EINVAL;
+
+	rc = camera_io_dev_read(&a_ctrl->io_master_info, 0x8423, &data,
+		CAMERA_SENSOR_I2C_TYPE_WORD, CAMERA_SENSOR_I2C_TYPE_WORD);
+	if (rc < 0) {
+		CAM_ERR(CAM_ACTUATOR,
+			"meizu_get_af_pos failed rc %d", rc);
+		return -EINVAL;
+	}
+
+	*pos = (u16)data;
+	return 0;
+}
+
+int32_t meizu_set_af_pos(struct cam_actuator_ctrl_t *a_ctrl, u16 pos)
+{
+	int32_t rc;
+	struct cam_sensor_i2c_reg_array reg_setting;
+	struct cam_sensor_i2c_reg_setting write_setting;
+
+	if (!a_ctrl)
+		return -EINVAL;
+
+	memset(&reg_setting, 0, sizeof(reg_setting));
+	reg_setting.reg_addr = 0xf2;
+	reg_setting.reg_data = pos;
+
+	write_setting.reg_setting = &reg_setting;
+	write_setting.size = 1;
+	write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
+	write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_WORD;
+	write_setting.delay = 0;
+
+	rc = camera_io_dev_write(&a_ctrl->io_master_info, &write_setting);
+	if (rc < 0) {
+		CAM_ERR(CAM_ACTUATOR,
+			"meizu_set_af_pos failed rc %d", rc);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+int32_t meizu_actuator_enable(struct cam_actuator_ctrl_t *a_ctrl, int enable)
+{
+	int32_t rc;
+	struct cam_sensor_i2c_reg_array reg_setting;
+	struct cam_sensor_i2c_reg_setting write_setting;
+
+	if (!a_ctrl)
+		return -EINVAL;
+
+	if (!enable) {
+		rc = cam_actuator_power_down(a_ctrl);
+		if (rc < 0)
+			CAM_ERR(CAM_ACTUATOR,
+				"meizu actuator power down failed rc %d", rc);
+		return rc;
+	}
+
+	rc = cam_actuator_power_up(a_ctrl);
+	if (rc < 0) {
+		CAM_ERR(CAM_ACTUATOR,
+			"meizu actuator power up failed rc %d", rc);
+		return rc;
+	}
+
+	/* Meizu AF initialisation register */
+	memset(&reg_setting, 0, sizeof(reg_setting));
+	reg_setting.reg_addr = 0x8430;
+	reg_setting.reg_data = 0xd00;
+
+	write_setting.reg_setting = &reg_setting;
+	write_setting.size = 1;
+	write_setting.addr_type = CAMERA_SENSOR_I2C_TYPE_WORD;
+	write_setting.data_type = CAMERA_SENSOR_I2C_TYPE_WORD;
+	write_setting.delay = 0;
+
+	rc = camera_io_dev_write(&a_ctrl->io_master_info, &write_setting);
+	if (rc < 0) {
+		CAM_ERR(CAM_ACTUATOR,
+			"meizu actuator init write failed rc %d", rc);
+		return -EINVAL;
+	}
+
+	usleep_range(10000, 11000);
+	return 0;
 }

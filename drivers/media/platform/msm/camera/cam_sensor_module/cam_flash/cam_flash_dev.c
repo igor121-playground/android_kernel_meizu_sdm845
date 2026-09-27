@@ -347,7 +347,7 @@ static int cam_flash_subdev_close(struct v4l2_subdev *sd,
 	}
 
 	mutex_lock(&fctrl->flash_mutex);
-	cam_flash_shutdown(fctrl);
+	meizu_flash_shutdown(fctrl);
 	mutex_unlock(&fctrl->flash_mutex);
 
 	return 0;

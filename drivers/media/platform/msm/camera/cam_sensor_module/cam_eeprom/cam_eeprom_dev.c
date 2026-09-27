@@ -220,6 +220,7 @@ static int cam_eeprom_i2c_driver_probe(struct i2c_client *client,
 	e_ctrl->bridge_intf.ops.link_setup = NULL;
 	e_ctrl->bridge_intf.ops.apply_req = NULL;
 	v4l2_set_subdevdata(&e_ctrl->v4l2_dev_str.sd, e_ctrl);
+	meizu_bsp_eeprom_register(e_ctrl);
 	e_ctrl->cam_eeprom_state = CAM_EEPROM_INIT;
 
 	return rc;
@@ -462,6 +463,7 @@ static int32_t cam_eeprom_platform_driver_probe(
 
 	platform_set_drvdata(pdev, e_ctrl);
 	v4l2_set_subdevdata(&e_ctrl->v4l2_dev_str.sd, e_ctrl);
+	meizu_bsp_eeprom_register(e_ctrl);
 
 	e_ctrl->cam_eeprom_state = CAM_EEPROM_INIT;
 
