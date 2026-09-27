@@ -25,7 +25,6 @@
 #include "cam_debug_util.h"
 
 static struct class *meizu_class;
-static struct device *meizu_dev;
 
 static struct cam_actuator_ctrl_t *g_a_ctrl;
 static struct cam_sensor_ctrl_t *g_s_ctrl;
@@ -137,8 +136,8 @@ EXPORT_SYMBOL(meizu_sysfslink_unregister);
  * af_enable: write-only in stock (its show returns 0).  Store enables or
  * disables the AF actuator.
  */
-static ssize_t af_enable_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t af_enable_store(struct class *cls,
+	struct class_attribute *attr, const char *buf, size_t count)
 {
 	int val = 0;
 	int32_t rc;
@@ -159,17 +158,17 @@ static ssize_t af_enable_store(struct device *dev,
 	return count;
 }
 
-static ssize_t af_enable_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
+static ssize_t af_enable_show(struct class *cls,
+	struct class_attribute *attr, char *buf)
 {
 	/* stock show is a no-op returning 0 */
 	return 0;
 }
-static DEVICE_ATTR_RW(af_enable);
+static CLASS_ATTR_RW(af_enable);
 
 /* af_pos: read/write the current AF position (register 0x8423). */
-static ssize_t af_pos_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
+static ssize_t af_pos_show(struct class *cls,
+	struct class_attribute *attr, char *buf)
 {
 	u16 pos = 0;
 	int32_t rc;
@@ -184,8 +183,8 @@ static ssize_t af_pos_show(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "%d\n", pos);
 }
 
-static ssize_t af_pos_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t af_pos_store(struct class *cls,
+	struct class_attribute *attr, const char *buf, size_t count)
 {
 	int val = 0;
 	int32_t rc;
@@ -211,14 +210,14 @@ static ssize_t af_pos_store(struct device *dev,
 
 	return count;
 }
-static DEVICE_ATTR_RW(af_pos);
+static CLASS_ATTR_RW(af_pos);
 
 /*
  * set_ops: write a target AF position and read back a pass/fail result plus
  * the measured position (stock format).
  */
-static ssize_t set_ops_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
+static ssize_t set_ops_show(struct class *cls,
+	struct class_attribute *attr, char *buf)
 {
 	u16 pos = 0;
 	int32_t rc;
@@ -241,8 +240,8 @@ static ssize_t set_ops_show(struct device *dev,
 		pos, (pos <= 0xc8) ? "pass" : "fail");
 }
 
-static ssize_t set_ops_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t set_ops_store(struct class *cls,
+	struct class_attribute *attr, const char *buf, size_t count)
 {
 	int val = 0;
 	int32_t rc;
@@ -268,17 +267,17 @@ static ssize_t set_ops_store(struct device *dev,
 
 	return count;
 }
-static DEVICE_ATTR_RW(set_ops);
+static CLASS_ATTR_RW(set_ops);
 
 /* gyro_req: arm/disarm the gyro request manager for OIS (write-only). */
-static ssize_t gyro_req_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
+static ssize_t gyro_req_show(struct class *cls,
+	struct class_attribute *attr, char *buf)
 {
 	return 0;
 }
 
-static ssize_t gyro_req_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t gyro_req_store(struct class *cls,
+	struct class_attribute *attr, const char *buf, size_t count)
 {
 	int val = 0;
 	int32_t rc;
@@ -297,11 +296,11 @@ static ssize_t gyro_req_store(struct device *dev,
 
 	return count;
 }
-static DEVICE_ATTR_RW(gyro_req);
+static CLASS_ATTR_RW(gyro_req);
 
 /* ois_enable: read/write the OIS enable register 0x847f. */
-static ssize_t ois_enable_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
+static ssize_t ois_enable_show(struct class *cls,
+	struct class_attribute *attr, char *buf)
 {
 	int32_t rc;
 	uint32_t data = 0;
@@ -319,8 +318,8 @@ static ssize_t ois_enable_show(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "%d\n", data);
 }
 
-static ssize_t ois_enable_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t ois_enable_store(struct class *cls,
+	struct class_attribute *attr, const char *buf, size_t count)
 {
 	int val = 0;
 	int32_t rc;
@@ -352,17 +351,17 @@ static ssize_t ois_enable_store(struct device *dev,
 
 	return count;
 }
-static DEVICE_ATTR_RW(ois_enable);
+static CLASS_ATTR_RW(ois_enable);
 
 /* ois_cali: trigger/report the OIS factory calibration. */
-static ssize_t ois_cali_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
+static ssize_t ois_cali_show(struct class *cls,
+	struct class_attribute *attr, char *buf)
 {
 	return scnprintf(buf, PAGE_SIZE, "%d\n", meizu_ois_cali_check());
 }
 
-static ssize_t ois_cali_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t ois_cali_store(struct class *cls,
+	struct class_attribute *attr, const char *buf, size_t count)
 {
 	int32_t rc;
 
@@ -377,18 +376,18 @@ static ssize_t ois_cali_store(struct device *dev,
 
 	return count;
 }
-static DEVICE_ATTR_RW(ois_cali);
+static CLASS_ATTR_RW(ois_cali);
 
 /* ois_cali_data: report the calibrated gyro offsets. */
-static ssize_t ois_cali_data_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
+static ssize_t ois_cali_data_show(struct class *cls,
+	struct class_attribute *attr, char *buf)
 {
 	s16 x = 0, y = 0;
 
 	meizu_ois_cali_get_result(&x, &y);
 	return scnprintf(buf, PAGE_SIZE, "%d %d\n", x, y);
 }
-static DEVICE_ATTR_RO(ois_cali_data);
+static CLASS_ATTR_RO(ois_cali_data);
 
 /*
  * OTP / calibration.  Stock validates a fixed OTP layout (flags + per-section
@@ -503,8 +502,8 @@ int meizu_cam_cal_check_main(u8 *buf, u32 len)
 }
 EXPORT_SYMBOL(meizu_cam_cal_check_main);
 
-static ssize_t cam_cal_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
+static ssize_t cam_cal_show(struct class *cls,
+	struct class_attribute *attr, char *buf)
 {
 	int rc;
 
@@ -520,10 +519,10 @@ static ssize_t cam_cal_show(struct device *dev,
 
 	return scnprintf(buf, PAGE_SIZE, "result=pass\n");
 }
-static DEVICE_ATTR_RO(cam_cal);
+static CLASS_ATTR_RO(cam_cal);
 
-static ssize_t cam_otp_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
+static ssize_t cam_otp_show(struct class *cls,
+	struct class_attribute *attr, char *buf)
 {
 	int n = 0;
 	u32 i;
@@ -537,25 +536,16 @@ static ssize_t cam_otp_show(struct device *dev,
 	n += scnprintf(buf + n, PAGE_SIZE - n, "\n");
 	return n;
 }
-static DEVICE_ATTR_RO(cam_otp);
+static CLASS_ATTR_RO(cam_otp);
 
-static struct attribute *meizu_attrs[] = {
-	&dev_attr_af_enable.attr,
-	&dev_attr_af_pos.attr,
-	&dev_attr_set_ops.attr,
-	&dev_attr_gyro_req.attr,
-	&dev_attr_ois_enable.attr,
-	&dev_attr_ois_cali.attr,
-	&dev_attr_ois_cali_data.attr,
-	&dev_attr_cam_cal.attr,
-	&dev_attr_cam_otp.attr,
-	NULL,
-};
-
-static struct attribute_group meizu_attr_group = {
-	.attrs = meizu_attrs,
-};
-
+/*
+ * Meizu camera class.
+ *
+ * Stock's meizu_class_init() only calls class_create(NULL, "meizu") - it does
+ * not create a device under the class.  We mirror that exactly and expose the
+ * attributes directly on the class (giving /sys/class/meizu/<attr>), so no
+ * device is created at boot.
+ */
 int meizu_cam_init(void)
 {
 	int rc;
@@ -568,25 +558,15 @@ int meizu_cam_init(void)
 		return rc;
 	}
 
-	meizu_dev = device_create(meizu_class, NULL, 0, NULL, "meizu");
-	if (IS_ERR(meizu_dev)) {
-		rc = PTR_ERR(meizu_dev);
-		CAM_ERR(CAM_SENSOR, "meizu device_create failed %d", rc);
-		class_destroy(meizu_class);
-		meizu_class = NULL;
-		meizu_dev = NULL;
-		return rc;
-	}
-
-	rc = sysfs_create_group(&meizu_dev->kobj, &meizu_attr_group);
-	if (rc) {
-		CAM_ERR(CAM_SENSOR, "meizu sysfs group failed %d", rc);
-		device_destroy(meizu_class, 0);
-		class_destroy(meizu_class);
-		meizu_class = NULL;
-		meizu_dev = NULL;
-		return rc;
-	}
+	class_create_file(meizu_class, &class_attr_af_enable);
+	class_create_file(meizu_class, &class_attr_af_pos);
+	class_create_file(meizu_class, &class_attr_set_ops);
+	class_create_file(meizu_class, &class_attr_gyro_req);
+	class_create_file(meizu_class, &class_attr_ois_enable);
+	class_create_file(meizu_class, &class_attr_ois_cali);
+	class_create_file(meizu_class, &class_attr_ois_cali_data);
+	class_create_file(meizu_class, &class_attr_cam_cal);
+	class_create_file(meizu_class, &class_attr_cam_otp);
 
 	CAM_INFO(CAM_SENSOR, "meizu camera class registered");
 	return 0;
@@ -594,11 +574,6 @@ int meizu_cam_init(void)
 
 void meizu_cam_exit(void)
 {
-	if (meizu_dev) {
-		sysfs_remove_group(&meizu_dev->kobj, &meizu_attr_group);
-		device_destroy(meizu_class, 0);
-		meizu_dev = NULL;
-	}
 	if (meizu_class) {
 		class_destroy(meizu_class);
 		meizu_class = NULL;
