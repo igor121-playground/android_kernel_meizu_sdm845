@@ -1,8 +1,15 @@
 ifeq ($(CONFIG_MACH_MEIZU_SDM845),y)
+ifeq ($(CONFIG_MACH_MEIZU_M1892),y)
+	dtbo-$(CONFIG_ARCH_SDM845) += \
+		sdm845-v2.1-mtp-overlay-meizu-m1892.dtbo
+
+sdm845-v2.1-mtp-overlay-meizu-m1892.dtbo-base := sdm845-v2.1-meizu-m1892.dtb
+else
 	dtbo-$(CONFIG_ARCH_SDM845) += \
 		sdm845-v2.1-mtp-overlay-meizu.dtbo
 
 sdm845-v2.1-mtp-overlay-meizu.dtbo-base := sdm845-v2.1-meizu.dtb
+endif
 else
 
 dtb-$(CONFIG_ARCH_QCOM)	+= apq8016-sbc.dtb msm8916-mtp.dtb

@@ -174,8 +174,12 @@
 };
 
 &mtp_batterydata {
+#ifdef MZ_M1892
+    #include "battery-m1892-3600mah.dtsi"
+#else
     #include "battery-3511331-meizu-m1882gy-3010mah-averaged-masterslave-jun4th2018.dtsi"
     #include "battery-3511331-meizu-m1882atl-3010mah-averaged-masterslave-jun4th2018.dtsi"
+#endif
 
     /delete-node/ qcom,ascent_3450mah;
     /delete-node/ qcom,demo_6000mah;

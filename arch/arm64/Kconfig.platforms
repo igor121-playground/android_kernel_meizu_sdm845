@@ -362,4 +362,13 @@ config MACH_MEIZU_SDM845
 	  This enables support for Meizu SDM845-based smartphones,
 	  like Meizu 16th and Meizu 16th Plus.
 
+config MACH_MEIZU_M1892
+	bool "Build device tree for Meizu 16th Plus (m1892)"
+	depends on MACH_MEIZU_SDM845
+	help
+	  Meizu 16th Plus shares msm-id/board-id with Meizu 16th, so the
+	  bootloader cannot pick a per-device DTB/DTBO. Select this to build
+	  the m1892 variant (Synaptics touch, DW7914 haptics, 3600mAh battery,
+	  camera PMIC on QUP SE4, 6.5" panel timings) instead of the m1882 one.
+
 endmenu

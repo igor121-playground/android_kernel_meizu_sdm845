@@ -44,6 +44,8 @@
 	};
 };
 
+/* m1882: AWINIC AW8691 haptics; m1892 uses DW7914 on SE12 (see m1892-overlay.dtsi) */
+#ifndef MZ_M1892
 &qupv3_se7_i2c {
 	status = "ok";
 	qcom,clk-freq-out = <1000000>;
@@ -59,6 +61,7 @@
 		pinctrl-0 = <&haptic_default>;
 	};
 };
+#endif
 
 &gpio_keys {
 	pinctrl-0 = <&key_vol_up_default>;

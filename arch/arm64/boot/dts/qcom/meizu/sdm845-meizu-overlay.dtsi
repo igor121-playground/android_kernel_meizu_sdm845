@@ -12,3 +12,7 @@
  */
 
 #include "overlay/common.dtsi"
+
+#ifdef MZ_M1892
+#include "m1892-overlay.dtsi"
+#endif

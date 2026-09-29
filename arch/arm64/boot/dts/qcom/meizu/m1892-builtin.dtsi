@@ -1,0 +1,96 @@
+/*
+ * Meizu 16th Plus (m1892) — отличия базового DTB от 16th (m1882).
+ * Источник: стоковый boot.img m1892 (DTB, добавленный к ядру 4.9.65-perf+).
+ * Подключать после meizu/builtin/common.dtsi (в sdm845-v2.1-meizu-m1892.dts).
+ */
+
+/* ---- pinctrl: узлы, которых нет в дереве m1882 ---- */
+&tlmm {
+	/* доп. линии панели: на m1892 в pinctrl дисплея входят gpio6 и gpio52 */
+	pmx_ap_sde {
+		sde_dsi_ap_active: sde_dsi_ap_active {
+			mux {
+				pins = "gpio6", "gpio52";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio6", "gpio52";
+				drive-strength = <8>;
+				bias-disable;
+			};
+		};
+
+		sde_dsi_ap_suspend: sde_dsi_ap_suspend {
+			mux {
+				pins = "gpio6", "gpio52";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio6", "gpio52";
+				drive-strength = <2>;
+				bias-pull-down;
+			};
+		};
+	};
+
+	/* reset тачскрина Synaptics (gpio126) */
+	tp_pins_tp_rst_output0: tp_pins_tp_rst_output0 {
+		mux {
+			pins = "gpio126";
+			function = "gpio";
+		};
+		config {
+			pins = "gpio126";
+			bias-disable;
+			output-low;
+		};
+	};
+
+	tp_pins_tp_rst_output1: tp_pins_tp_rst_output1 {
+		mux {
+			pins = "gpio126";
+			function = "gpio";
+		};
+		config {
+			pins = "gpio126";
+			bias-pull-up;
+			output-high;
+		};
+	};
+
+	/* вибромотор DW7914: IRQ на gpio135 (на m1882 aw8691: gpio69/gpio44) */
+	haptic {
+		haptic_default: haptic_default {
+			mux {
+				pins = "gpio135";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio135";
+				drive-strength = <2>;
+				bias-pull-up;
+				input-enable;
+			};
+		};
+	};
+};
+
+/* ---- камерный PMIC TWL80125 на m1892 висит на QUP SE4 (i2c@890000), а не SE14:
+ * переключается макросом MZ_CAM_PMIC_I2C в builtin/power.dtsi. Здесь — только
+ * второй датчик заряда O2Micro OZ8806 с той же шины. Драйвера oz8806 в ядре
+ * meizucustoms НЕТ, узел оставлен как в стоке (заработает после портирования). ---- */
+&qupv3_se4_i2c {
+	status = "ok";
+
+	oz8806@2f {
+		compatible = "o2micro,oz8806";
+		reg = <0x2f>;
+		status = "ok";
+	};
+};
+
+/* ---- ramoops как в стоке: тогда стоковое ядро сможет прочитать pstore после неудачной загрузки ---- */
+&ramoops_mem {
+	record-size = <0x4000>;
+	console-size = <0x40000>;
+};

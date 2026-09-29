@@ -41,7 +41,14 @@
     };
 };
 
-&qupv3_se14_i2c {
+/* Camera PMIC bus: QUP SE14 on m1882, QUP SE4 (i2c@890000) on m1892 */
+#ifdef MZ_M1892
+#define MZ_CAM_PMIC_I2C qupv3_se4_i2c
+#else
+#define MZ_CAM_PMIC_I2C qupv3_se14_i2c
+#endif
+
+&MZ_CAM_PMIC_I2C {
     status = "ok";
 
     twl80125@50 {

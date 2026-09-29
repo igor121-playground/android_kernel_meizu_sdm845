@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2024, MeizuCustoms enthusiasts
+/* Copyright (c) 2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -11,8 +10,17 @@
  * GNU General Public License for more details.
  */
 
-#include "builtin/common.dtsi"
+/* Meizu 16th Plus (m1892): same msm-id/board-id as 16th (m1882), differs only in peripherals */
+#define MZ_M1892 1
 
-#ifdef MZ_M1892
-#include "m1892-builtin.dtsi"
-#endif
+/dts-v1/;
+
+#include "sdm845-v2.1.dtsi"
+#include "meizu/sdm845-meizu.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. SDM845 v2.1 SoC";
+	compatible = "qcom,sdm845";
+	qcom,board-id = <0 0>;
+};
+

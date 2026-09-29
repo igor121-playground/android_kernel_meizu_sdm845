@@ -11,7 +11,11 @@
  * GNU General Public License for more details.
  */
 
+#ifdef MZ_M1892
+#include "dsi-panel-sofef00m-amoled-fhd-cmd-m1892.dtsi"
+#else
 #include "dsi-panel-sofef00m-amoled-fhd-cmd.dtsi"
+#endif
 
 &soc {
 	/delete-node/ qcom,dsi-display@17;
@@ -71,6 +75,8 @@
     /delete-property/ qcom,aux-sel-gpio;
 };
 
+/* m1882: ST FTS touchscreen; m1892 uses Synaptics DSX (see m1892-overlay.dtsi) */
+#ifndef MZ_M1892
 &qupv3_se5_i2c {
 	status = "ok";
 
@@ -89,3 +95,4 @@
 		pinctrl-0 = <&tp_pins_tp_eint_as_int>;
 	};
 };
+#endif

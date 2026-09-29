@@ -1,0 +1,87 @@
+/*
+ * Meizu 16th Plus (m1892) — отличия DTBO от 16th (m1882).
+ * Источник: стоковый dtbo.img m1892 (board-id <8 0>, msm-id <321 0x20001>).
+ * Подключается из sdm845-meizu-overlay.dtsi при #define MZ_M1892 (sdm845-v2.1-mtp-overlay-meizu-m1892.dts).
+ * Узлы, которые есть только у m1882 (ST FTS тач, aw8691, профили батарей m1882, m1882-панель),
+ * отключены в overlay/display.dtsi, misc.dtsi, power.dtsi через #ifndef MZ_M1892 — /delete-node/
+ * между фрагментами overlay в dtc не работает.
+ */
+
+/* ---- Дисплей: доп. pinctrl gpio6/gpio52 ---- */
+&dsi_sofef00m_amoled_cmd_display {
+	pinctrl-0 = <&sde_dsi_active &sde_dsi_ap_active &sde_te_active>;
+	pinctrl-1 = <&sde_dsi_suspend &sde_dsi_ap_suspend &sde_te_suspend>;
+	/* В стоке ещё есть qcom,platform-reset-ap-gpio = <&tlmm 6 0>, но ни стоковое,
+	 * ни это ядро такое свойство не читают (строки нет в бинаре) — только pinctrl. */
+};
+
+/* ---- Тачскрин: Synaptics DSX по I2C @0x20 (на m1882 — ST FTS @0x49), те же GPIO 125/126 ---- */
+&qupv3_se5_i2c {
+	status = "ok";
+	qcom,clk-freq-out = <100000>;
+
+	synaptics_dsx@20 {
+		compatible = "synaptics,dsx-i2c";
+		reg = <0x20>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <125 0x0>;
+
+		avdd-supply = <&pm8998_l28>;
+		vdd-supply = <&pm8998_l14>;
+		synaptics,pwr-reg-name = "avdd";
+		synaptics,bus-reg-name = "vdd";
+
+		synaptics,irq-gpio = <&tlmm 125 0x0>;
+		synaptics,reset-gpio = <&tlmm 126 0x0>;
+		synaptics,irq-on-state = <0>;
+		synaptics,reset-on-state = <0>;
+		synaptics,power-delay-ms = <2>;
+		synaptics,reset-delay-ms = <50>;
+		synaptics,reset-active-ms = <10>;
+
+		/* драйвер synaptics_dsx ищет состояния "pmx_ts_active/suspend/release";
+		 * pinctrl для него необязателен, поэтому стоковые имена оставлены как есть */
+		pinctrl-names = "tp_eint_as_int", "tp_rst_output0", "tp_rst_output1";
+		pinctrl-0 = <&tp_pins_tp_eint_as_int>;
+		pinctrl-1 = <&tp_pins_tp_rst_output0>;
+		pinctrl-2 = <&tp_pins_tp_rst_output1>;
+	};
+};
+
+/* ---- Вибро: DW7914 на QUP SE12 (i2c@a90000) @0x59 (aw8691 на SE7 отключён в misc.dtsi) ---- */
+&qupv3_se12_i2c {
+	status = "ok";
+	qcom,clk-freq-out = <1000000>;
+
+	/* драйвера meizu,dw7914 в ядре meizucustoms НЕТ — нужно портировать (Dongwoon DW7914) */
+	dw7914@59 {
+		compatible = "meizu,dw7914";
+		reg = <0x59>;
+		dw7914,irq-gpio = <&tlmm 135 0x0>;
+		dw7914,en-gpio = <&tlmm 44 0x0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&haptic_default>;
+	};
+};
+
+/* ---- Зарядка / FG: батарея 3600 мАч, ток до 4.2 А, сенс тока через SMB1355 ---- */
+&pmi8998_charger {
+	qcom,fcc-max-ua = <4200000>;
+};
+
+&pmi8998_fg {
+	qcom,fg-rsense-sel = <2>;	/* SRC_SEL_BATFET_SMB, как в стоке m1892 */
+};
+
+/* профиль батареи m1892 (3600 мАч, batt-id 100k) подключается в overlay/power.dtsi:
+ * battery-m1892-3600mah.dtsi вместо двух профилей m1882 */
+
+/* ---- switch_charger (FUSB): IRQ на gpio40 присутствует только в дереве m1892 ---- */
+&switch_charger {
+	fusb_irq-gpio = <&tlmm 40 0x0>;
+	interrupt-parent = <&tlmm>;
+	interrupts = <40 0x3>;
+	interrupt-names = "fusb_irq";
+	pinctrl-names = "default";
+	pinctrl-0 = <&fusb_irq_pin_input>;
+};
